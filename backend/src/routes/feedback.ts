@@ -59,7 +59,8 @@
 -        rating,
 -        communication,
 -        technical,
--        teamwork,
+-      }
+      teamwork,
 -        initiative,
 -        comments,
 -      },
@@ -181,7 +182,9 @@
 +      .populate({ path: 'intern', select: 'name internId' })
 +      .populate({ path: 'mentor', select: 'name empId' });
 
-     if (!feedback) {
+  
+ }
+ )   if (!feedback) {
        throw new ApiError('Feedback not found', 404);
      }
 
