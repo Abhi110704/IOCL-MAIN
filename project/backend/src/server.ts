@@ -8,7 +8,7 @@ import { Server as SocketIOServer } from 'socket.io';
 
 import { PORT, NODE_ENV, CORS_ORIGIN } from './config/env';
 import { logger, morganStream } from './config/logger';
-import { DatabaseConnection } from './config/database';
+import DatabaseConnection from './config/database';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { initializeWebSocket } from './services/websocket';
 import { setupRateLimiting } from './middleware/rateLimiting';

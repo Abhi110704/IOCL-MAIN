@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { prisma } from '../config/database';
+import { Feedback, Assignment, Mentor, Intern } from '../models';
 import { authenticate, authorize } from '../middleware/auth';
 import { validateBody } from '../middleware/validation';
 import { asyncHandler } from '../middleware/errorHandler';
@@ -32,76 +32,60 @@ router.post('/',
     let mentorId: string;
     if (req.user!.role === 'ADMIN') {
       // For admin, get the mentor from assignment
-      const assignment = await prisma.assignment.findFirst({
-        where: { internId, isActive: true },
+      const assignment = await Assignment.findOne({
+        internId,
+        isActive: true,
       });
       
       if (!assignment) {
         throw new ApiError('No active mentor assignment found for this intern', 404);
       }
       
-      mentorId = assignment.mentorId;
+      mentorId = assignment.mentorId.toString();
     } else {
       // For mentor, get their mentor record
-      const mentor = await prisma.mentor.findUnique({
-        where: { empId: req.user!.empId },
-      });
+      const mentor = await Mentor.findOne({ empId: req.user!.empId });
       
       if (!mentor) {
         throw new ApiError('Mentor record not found', 404);
       }
       
-      mentorId = mentor.id;
+      mentorId = mentor._id.toString();
     }
 
     // Verify intern exists and is assigned to this mentor
-    const assignment = await prisma.assignment.findFirst({
-      where: { internId, mentorId, isActive: true },
-      include: { intern: true },
-    });
+    const assignment = await Assignment.findOne({
+      internId,
+      mentorId,
+      isActive: true,
+    }).populate('intern');
 
     if (!assignment) {
       throw new ApiError('Intern not assigned to this mentor', 403);
     }
 
     // Create feedback
-    const feedback = await prisma.feedback.create({
-      data: {
-        internId,
-        mentorId,
-        rating,
-        communication,
-        technical,
-        teamwork,
-        initiative,
-        comments,
-      },
-      include: {
-        intern: {
-          select: {
-            name: true,
-            internId: true,
-          },
-        },
-        mentor: {
-          select: {
-            name: true,
-            empId: true,
-          },
-        },
-      },
+    const feedback = new Feedback({
+      internId,
+      mentorId,
+      rating,
+      communication,
+      technical,
+      teamwork,
+      initiative,
+      comments,
     });
+    await feedback.save();
 
+    await feedback.populate([
+      { path: 'intern', select: 'name internId' },
+      { path: 'mentor', select: 'name empId' },
+    ]);
     logger.info(`Feedback created for intern: ${assignment.intern.name} by ${feedback.mentor.name}`);
 
     res.status(201).json({
       success: true,
-      data: {
-        ...feedback,
-        internName: feedback.intern.name,
-        mentor: feedback.mentor.name,
-        date: feedback.createdAt.toISOString().split('T')[0],
-      },
+      data: feedback,
       message: 'Feedback submitted successfully',
     });
   })
@@ -115,9 +99,8 @@ router.get('/',
   authenticate,
   asyncHandler(async (req, res) => {
     const { internId, mentorId, page, limit } = req.query as any;
-    const skip = (page - 1) * limit;
+    const skip = (Number(page) - 1) * Number(limit);
 
-    // Build where clause
     const where: any = {};
     
     if (internId) {
@@ -126,12 +109,10 @@ router.get('/',
 
     // For mentors, only show their feedback
     if (req.user?.role === 'MENTOR') {
-      const mentor = await prisma.mentor.findUnique({
-        where: { empId: req.user.empId },
-      });
+      const mentor = await Mentor.findOne({ empId: req.user.empId });
 
       if (mentor) {
-        where.mentorId = mentor.id;
+        where.mentorId = mentor._id;
       }
     }
 
@@ -141,57 +122,34 @@ router.get('/',
 
     // For interns, only show their feedback
     if (req.user?.role === 'INTERN') {
-      const intern = await prisma.intern.findFirst({
-        where: { internId: req.user.empId },
-      });
+      const intern = await Intern.findOne({ internId: req.user.empId });
 
       if (intern) {
-        where.internId = intern.id;
+        where.internId = intern._id;
       }
     }
 
     // Get feedback with pagination
     const [feedbackList, total] = await Promise.all([
-      prisma.feedback.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          intern: {
-            select: {
-              name: true,
-              internId: true,
-            },
-          },
-          mentor: {
-            select: {
-              name: true,
-              empId: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.feedback.count({ where }),
+      Feedback.find(where)
+        .skip(skip)
+        .limit(Number(limit))
+        .sort({ createdAt: -1 })
+        .populate({ path: 'intern', select: 'name internId' })
+        .populate({ path: 'mentor', select: 'name empId' }),
+      Feedback.countDocuments(where),
     ]);
 
-    // Transform data for frontend
-    const transformedFeedback = feedbackList.map(feedback => ({
-      ...feedback,
-      internName: feedback.intern.name,
-      mentor: feedback.mentor.name,
-      date: feedback.createdAt.toISOString().split('T')[0],
-    }));
 
     res.json({
       success: true,
       data: {
-        feedback: transformedFeedback,
+        feedback: feedbackList,
         pagination: {
-          page,
-          limit,
+          page: Number(page),
+          limit: Number(limit),
           total,
-          pages: Math.ceil(total / limit),
+          pages: Math.ceil(total / Number(limit)),
         },
       },
     });
@@ -207,23 +165,9 @@ router.get('/:id',
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const feedback = await prisma.feedback.findUnique({
-      where: { id },
-      include: {
-        intern: {
-          select: {
-            name: true,
-            internId: true,
-          },
-        },
-        mentor: {
-          select: {
-            name: true,
-            empId: true,
-          },
-        },
-      },
-    });
+    const feedback = await Feedback.findById(id)
+      .populate({ path: 'intern', select: 'name internId' })
+      .populate({ path: 'mentor', select: 'name empId' });
 
     if (!feedback) {
       throw new ApiError('Feedback not found', 404);
@@ -231,33 +175,24 @@ router.get('/:id',
 
     // Check access permissions
     if (req.user?.role === 'MENTOR') {
-      const mentor = await prisma.mentor.findUnique({
-        where: { empId: req.user.empId },
-      });
+      const mentor = await Mentor.findOne({ empId: req.user.empId });
 
-      if (!mentor || feedback.mentorId !== mentor.id) {
+      if (!mentor || feedback.mentorId.toString() !== mentor._id.toString()) {
         throw new ApiError('Access denied', 403);
       }
     }
 
     if (req.user?.role === 'INTERN') {
-      const intern = await prisma.intern.findFirst({
-        where: { internId: req.user.empId },
-      });
+      const intern = await Intern.findOne({ internId: req.user.empId });
 
-      if (!intern || feedback.internId !== intern.id) {
+      if (!intern || feedback.internId.toString() !== intern._id.toString()) {
         throw new ApiError('Access denied', 403);
       }
     }
 
     res.json({
       success: true,
-      data: {
-        ...feedback,
-        internName: feedback.intern.name,
-        mentor: feedback.mentor.name,
-        date: feedback.createdAt.toISOString().split('T')[0],
-      },
+      data: feedback,
     });
   })
 );
@@ -274,9 +209,7 @@ router.put('/:id',
     const updateData = req.body;
 
     // Get current feedback
-    const currentFeedback = await prisma.feedback.findUnique({
-      where: { id },
-    });
+    const currentFeedback = await Feedback.findById(id);
 
     if (!currentFeedback) {
       throw new ApiError('Feedback not found', 404);
@@ -284,50 +217,30 @@ router.put('/:id',
 
     // Check permissions for mentors
     if (req.user?.role === 'MENTOR') {
-      const mentor = await prisma.mentor.findUnique({
-        where: { empId: req.user.empId },
-      });
+      const mentor = await Mentor.findOne({ empId: req.user.empId });
 
-      if (!mentor || currentFeedback.mentorId !== mentor.id) {
+      if (!mentor || currentFeedback.mentorId.toString() !== mentor._id.toString()) {
         throw new ApiError('Access denied', 403);
       }
     }
 
     // Remove fields that shouldn't be updated
-    delete updateData.id;
     delete updateData.internId;
     delete updateData.mentorId;
     delete updateData.createdAt;
 
-    const feedback = await prisma.feedback.update({
-      where: { id },
-      data: updateData,
-      include: {
-        intern: {
-          select: {
-            name: true,
-            internId: true,
-          },
-        },
-        mentor: {
-          select: {
-            name: true,
-            empId: true,
-          },
-        },
-      },
-    });
+    const feedback = await Feedback.findByIdAndUpdate(id, updateData, { new: true })
+      .populate({ path: 'intern', select: 'name internId' })
+      .populate({ path: 'mentor', select: 'name empId' });
 
+    if (!feedback) {
+      throw new ApiError('Feedback not found', 404);
+    }
     logger.info(`Feedback updated for intern: ${feedback.intern.name}`);
 
     res.json({
       success: true,
-      data: {
-        ...feedback,
-        internName: feedback.intern.name,
-        mentor: feedback.mentor.name,
-        date: feedback.createdAt.toISOString().split('T')[0],
-      },
+      data: feedback,
       message: 'Feedback updated successfully',
     });
   })
@@ -344,17 +257,8 @@ router.delete('/:id',
     const { id } = req.params;
 
     // Get current feedback
-    const currentFeedback = await prisma.feedback.findUnique({
-      where: { id },
-      include: {
-        intern: {
-          select: {
-            name: true,
-            internId: true,
-          },
-        },
-      },
-    });
+    const currentFeedback = await Feedback.findById(id)
+      .populate({ path: 'intern', select: 'name internId' });
 
     if (!currentFeedback) {
       throw new ApiError('Feedback not found', 404);
@@ -362,18 +266,14 @@ router.delete('/:id',
 
     // Check permissions for mentors
     if (req.user?.role === 'MENTOR') {
-      const mentor = await prisma.mentor.findUnique({
-        where: { empId: req.user.empId },
-      });
+      const mentor = await Mentor.findOne({ empId: req.user.empId });
 
-      if (!mentor || currentFeedback.mentorId !== mentor.id) {
+      if (!mentor || currentFeedback.mentorId.toString() !== mentor._id.toString()) {
         throw new ApiError('Access denied', 403);
       }
     }
 
-    await prisma.feedback.delete({
-      where: { id },
-    });
+    await Feedback.findByIdAndDelete(id);
 
     logger.info(`Feedback deleted for intern: ${currentFeedback.intern.name}`);
 

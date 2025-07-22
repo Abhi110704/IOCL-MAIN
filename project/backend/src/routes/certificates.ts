@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import PDFDocument from 'pdfkit';
-import { prisma } from '../config/database';
+import { Application, Project, Intern } from '../models';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { ApiError } from '../types';
@@ -19,12 +19,8 @@ router.get('/approval-letter/:applicationId',
     const { applicationId } = req.params;
 
     // Get application with intern details
-    const application = await prisma.application.findUnique({
-      where: { id: applicationId },
-      include: {
-        intern: true,
-      },
-    });
+    const application = await Application.findById(applicationId)
+      .populate('intern');
 
     if (!application) {
       throw new ApiError('Application not found', 404);
@@ -119,13 +115,9 @@ router.get('/completion-certificate/:submissionId',
     const { submissionId } = req.params;
 
     // Get project submission with intern and mentor details
-    const submission = await prisma.project.findUnique({
-      where: { id: submissionId },
-      include: {
-        intern: true,
-        mentor: true,
-      },
-    });
+    const submission = await Project.findById(submissionId)
+      .populate('intern')
+      .populate('mentor');
 
     if (!submission) {
       throw new ApiError('Project submission not found', 404);
@@ -229,9 +221,7 @@ router.get('/intern/:internId',
     const { internId } = req.params;
 
     // Find intern
-    const intern = await prisma.intern.findFirst({
-      where: { internId },
-    });
+    const intern = await Intern.findOne({ internId });
 
     if (!intern) {
       throw new ApiError('Intern not found', 404);
@@ -243,15 +233,11 @@ router.get('/intern/:internId',
     }
 
     // Find approved project
-    const approvedProject = await prisma.project.findFirst({
-      where: {
-        internId: intern.id,
+    const approvedProject = await Project.findOne({
+        internId: intern._id,
         status: 'APPROVED',
-      },
-      include: {
-        mentor: true,
-      },
-    });
+      })
+      .populate('mentor');
 
     if (!approvedProject) {
       throw new ApiError('No approved project found for certificate generation', 404);

@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { Types } from 'mongoose';
 
 // Database Types (matching Prisma schema)
 export interface User {
-  id: string;
+  _id: string;
   username: string;
   password: string;
   role: 'ADMIN' | 'EMPLOYEE' | 'INTERN' | 'MENTOR';
@@ -17,7 +18,7 @@ export interface User {
 }
 
 export interface Intern {
-  id: string;
+  _id: string;
   internId: string;
   name: string;
   email: string;
@@ -39,7 +40,7 @@ export interface Intern {
 }
 
 export interface Mentor {
-  id: string;
+  _id: string;
   empId: string;
   name: string;
   department: string;
@@ -54,28 +55,28 @@ export interface Mentor {
 }
 
 export interface Assignment {
-  id: string;
-  internId: string;
-  mentorId: string;
+  _id: string;
+  internId: Types.ObjectId;
+  mentorId: Types.ObjectId;
   department: string;
   assignedAt: Date;
   isActive: boolean;
 }
 
 export interface Application {
-  id: string;
-  internId: string;
+  _id: string;
+  internId: Types.ObjectId;
   status: ApplicationStatus;
-  reviewedBy?: string;
+  reviewedBy?: Types.ObjectId;
   reviewNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface Feedback {
-  id: string;
-  internId: string;
-  mentorId: string;
+  _id: string;
+  internId: Types.ObjectId;
+  mentorId: Types.ObjectId;
   rating: number;
   communication: number;
   technical: number;
@@ -86,9 +87,9 @@ export interface Feedback {
 }
 
 export interface Task {
-  id: string;
-  internId: string;
-  mentorId: string;
+  _id: string;
+  internId: Types.ObjectId;
+  mentorId: Types.ObjectId;
   title: string;
   description: string;
   dueDate: Date;
@@ -99,9 +100,9 @@ export interface Task {
 }
 
 export interface Project {
-  id: string;
-  internId: string;
-  mentorId: string;
+  _id: string;
+  internId: Types.ObjectId;
+  mentorId: Types.ObjectId;
   title: string;
   description?: string;
   fileUrl?: string;
@@ -113,9 +114,9 @@ export interface Project {
 }
 
 export interface Meeting {
-  id: string;
-  internId: string;
-  mentorId: string;
+  _id: string;
+  internId: Types.ObjectId;
+  mentorId: Types.ObjectId;
   title: string;
   date: Date;
   time: string;
@@ -188,7 +189,7 @@ export const CreateInternSchema = z.object({
 });
 
 export const CreateApplicationSchema = z.object({
-  internId: z.string().cuid('Invalid intern ID'),
+  internId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid intern ID'),
 });
 
 export const UpdateApplicationSchema = z.object({
@@ -197,13 +198,13 @@ export const UpdateApplicationSchema = z.object({
 });
 
 export const CreateAssignmentSchema = z.object({
-  internId: z.string().cuid('Invalid intern ID'),
-  mentorId: z.string().cuid('Invalid mentor ID'),
+  internId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid intern ID'),
+  mentorId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid mentor ID'),
   department: z.string().min(1, 'Department is required'),
 });
 
 export const CreateFeedbackSchema = z.object({
-  internId: z.string().cuid('Invalid intern ID'),
+  internId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid intern ID'),
   rating: z.number().min(1).max(10),
   communication: z.number().min(1).max(10),
   technical: z.number().min(1).max(10),
@@ -213,7 +214,7 @@ export const CreateFeedbackSchema = z.object({
 });
 
 export const CreateTaskSchema = z.object({
-  internId: z.string().cuid('Invalid intern ID'),
+  internId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid intern ID'),
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   dueDate: z.string().transform((str) => new Date(str)),
@@ -221,7 +222,7 @@ export const CreateTaskSchema = z.object({
 });
 
 export const CreateProjectSchema = z.object({
-  internId: z.string().cuid('Invalid intern ID'),
+  internId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid intern ID'),
   title: z.string().min(5, 'Title must be at least 5 characters'),
   description: z.string().min(20, 'Description must be at least 20 characters').optional(),
 });
