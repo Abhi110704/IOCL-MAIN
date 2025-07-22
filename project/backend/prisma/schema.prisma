@@ -1,0 +1,287 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  role      Role
+  empId     String?  @unique
+  name      String
+  email     String?
+  phone     String?
+  department String?
+  isFirstLogin Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdApplications Application[] @relation("CreatedBy")
+  assignedInterns     Assignment[] @relation("MentorAssignments")
+  givenFeedback       Feedback[] @relation("FeedbackGiver")
+  receivedFeedback    Feedback[] @relation("FeedbackReceiver")
+
+  @@map("users")
+}
+
+model Intern {
+  id          String   @id @default(cuid())
+  internId    String   @unique
+  name        String
+  email       String
+  phone       String
+  institute   String
+  course      String
+  semester    String
+  rollNumber  String
+  department  String
+  startDate   DateTime
+  endDate     DateTime
+  address     String
+  documents   Json     // Store document URLs as JSON
+  status      InternStatus @default(SUBMITTED)
+  referredBy  String
+  referredByEmpId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  applications Application[]
+  assignments  Assignment[]
+  feedback     Feedback[] @relation("FeedbackReceiver")
+  projects     Project[]
+  tasks        Task[]
+  meetings     Meeting[]
+
+  @@map("interns")
+}
+
+model Mentor {
+  id           String   @id @default(cuid())
+  empId        String   @unique
+  name         String
+  department   String
+  email        String
+  phone        String?
+  availability MentorAvailability @default(AVAILABLE)
+  experience   String?
+  maxCapacity  Int      @default(3)
+  currentInterns Int    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  assignments Assignment[]
+  feedback    Feedback[] @relation("FeedbackGiver")
+  tasks       Task[]
+  meetings    Meeting[]
+  projects    Project[] @relation("ProjectMentor")
+
+  @@map("mentors")
+}
+
+model Assignment {
+  id        String   @id @default(cuid())
+  internId  String
+  mentorId  String
+  department String
+  assignedAt DateTime @default(now())
+  isActive   Boolean  @default(true)
+
+  // Relations
+  intern Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
+  mentor Mentor @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  assignedBy User @relation("MentorAssignments", fields: [mentorId], references: [id])
+
+  @@unique([internId, mentorId])
+  @@map("assignments")
+}
+
+model Application {
+  id        String   @id @default(cuid())
+  internId  String
+  status    ApplicationStatus @default(SUBMITTED)
+  reviewedBy String?
+  reviewNotes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  intern    Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
+  reviewer  User?  @relation("CreatedBy", fields: [reviewedBy], references: [id])
+
+  @@map("applications")
+}
+
+model Feedback {
+  id           String   @id @default(cuid())
+  internId     String
+  mentorId     String
+  rating       Int      // Overall rating 1-10
+  communication Int     // Communication skills 1-10
+  technical    Int      // Technical skills 1-10
+  teamwork     Int      // Teamwork 1-10
+  initiative   Int      // Initiative 1-10
+  comments     String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  intern Intern @relation("FeedbackReceiver", fields: [internId], references: [id], onDelete: Cascade)
+  mentor Mentor @relation("FeedbackGiver", fields: [mentorId], references: [id], onDelete: Cascade)
+  giver  User   @relation("FeedbackGiver", fields: [mentorId], references: [empId])
+  receiver User @relation("FeedbackReceiver", fields: [internId], references: [empId])
+
+  @@map("feedback")
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  internId    String
+  mentorId    String
+  title       String
+  description String
+  dueDate     DateTime
+  status      TaskStatus @default(PENDING)
+  priority    Priority   @default(MEDIUM)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  intern Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
+  mentor Mentor @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}
+
+model Project {
+  id            String        @id @default(cuid())
+  internId      String
+  mentorId      String
+  title         String
+  description   String?
+  fileUrl       String?
+  status        ProjectStatus @default(SUBMITTED)
+  feedback      String?
+  grade         String?
+  submittedAt   DateTime      @default(now())
+  reviewedAt    DateTime?
+
+  // Relations
+  intern Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
+  mentor Mentor @relation("ProjectMentor", fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@map("projects")
+}
+
+model Meeting {
+  id       String        @id @default(cuid())
+  internId String
+  mentorId String
+  title    String
+  date     DateTime
+  time     String
+  type     MeetingType
+  status   MeetingStatus @default(SCHEDULED)
+  agenda   String?
+  notes    String?
+  createdAt DateTime    @default(now())
+
+  // Relations
+  intern Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
+  mentor Mentor @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@map("meetings")
+}
+
+model Document {
+  id        String      @id @default(cuid())
+  internId  String
+  type      DocumentType
+  filename  String
+  url       String
+  size      Int
+  mimeType  String
+  uploadedAt DateTime   @default(now())
+
+  @@map("documents")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  EMPLOYEE
+  INTERN
+  MENTOR
+}
+
+enum InternStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  ACTIVE
+  COMPLETED
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum MentorAvailability {
+  AVAILABLE
+  BUSY
+  UNAVAILABLE
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ProjectStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum MeetingType {
+  WEEKLY_REVIEW
+  PROJECT_DISCUSSION
+  FEEDBACK_SESSION
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum DocumentType {
+  PHOTO
+  RESUME
+  COLLEGE_ID
+  LAST_SEMESTER_RESULT
+  NOC
+  ID_PROOF
+  OTHER
+}
