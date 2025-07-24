@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es6",                          // Compile to a modern JavaScript version
+    "module": "commonjs",                     // Use the standard Node.js module system
+    "outDir": "./dist",                       // *** This is the crucial line: Output files to the 'dist' directory ***
+    "rootDir": "./src",                       // Where your source TypeScript files are
+    "strict": true,                           // Enable strict type-checking
+    "esModuleInterop": true,                  // Allows for better compatibility between module types
+    "skipLibCheck": true,                     // Skip type checking of declaration files
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src//*"],                    // Tell the compiler to include all files in the 'src' folder
+  "exclude": ["node_modules", "/*.spec.ts"] // Exclude node_modules from compilation
+}

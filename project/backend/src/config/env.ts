@@ -10,11 +10,11 @@ const envSchema = z.object({
   PORT: z.string().transform(Number).default('3001'),
   
   // Database
-  MONGO_URI: z.string().min(1, 'MONGO_URI is required'),
+  MONGO_URI: z.string().min(1, 'mongodb+srv://harsh17215:Har@12345@cluster0.6ggy07q.mongodb.net'),
   
   // JWT
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  JWT_EXPIRES_IN: z.string().default('7d'),
+  JWT_SECRET: z.string().min(32, 'x7y9z2a4b6c8d0e2f4g6h8i0j2k4l6m8'),
+  JWT_EXPIRES_IN: z.string().default('1h'),
   
   // AWS S3 (optional)
   AWS_ACCESS_KEY_ID: z.string().optional(),
@@ -37,7 +37,7 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().default('./uploads'),
   
   // CORS
-  CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  CORS_ORIGIN: z.string().default('http://localhost:4173'),
   
   // Security
   BCRYPT_ROUNDS: z.string().transform(Number).default('12'),

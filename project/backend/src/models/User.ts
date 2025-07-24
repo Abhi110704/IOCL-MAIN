@@ -65,10 +65,7 @@ const UserSchema = new Schema<IUser>({
   timestamps: true,
 });
 
-// Index for performance
-UserSchema.index({ username: 1 });
-UserSchema.index({ empId: 1 });
-UserSchema.index({ role: 1 });
+
 
 // Hash password before saving
 UserSchema.pre('save', async function(next) {

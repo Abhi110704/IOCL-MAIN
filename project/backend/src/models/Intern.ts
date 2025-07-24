@@ -106,10 +106,6 @@ const InternSchema = new Schema<IIntern>({
   timestamps: true,
 });
 
-// Indexes for performance
-InternSchema.index({ internId: 1 });
-InternSchema.index({ department: 1 });
-InternSchema.index({ status: 1 });
-InternSchema.index({ referredByEmpId: 1 });
+
 
 export const Intern = mongoose.model<IIntern>('Intern', InternSchema);

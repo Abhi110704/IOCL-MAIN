@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserPlus, Save, FileText, Upload, AlertCircle, Camera } from 'lucide-react';
+import { internAPI } from '@/utils/api';
 
 interface User {
   empId: string;
@@ -57,7 +58,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -86,13 +86,11 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
     if (!formData.lastSemesterResult) newErrors.lastSemesterResult = 'Last semester result is required';
     if (!formData.idProof) newErrors.idProof = 'ID proof is required';
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    // Validate date range
     if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
@@ -107,54 +105,74 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
-    
+
+    const internData = {
+      name: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      institute: formData.collegeName,
+      course: formData.course,
+      semester: formData.semester,
+      rollNumber: formData.rollNumber,
+      department: formData.department,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      address: formData.address,
+      referredBy: formData.referredBy,
+      referredByEmpId: formData.referredByEmpId,
+      photo: formData.photo,
+      resume: formData.resume,
+      collegeId: formData.collegeId,
+      lastSemesterResult: formData.lastSemesterResult,
+      noc: formData.noc,
+      idProof: formData.idProof,
+      otherDocument: formData.otherDocument,
+    };
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Generate Intern ID
-      const internId = `IOCL-${Date.now().toString().slice(-6)}`;
-      
-      alert(`Intern registered successfully!\nIntern ID: ${internId}`);
-      
-      // Reset form
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        collegeName: '',
-        course: '',
-        semester: '',
-        rollNumber: '',
-        department: '',
-        startDate: '',
-        endDate: '',
-        address: '',
-        photo: null,
-        resume: null,
-        collegeId: null,
-        lastSemesterResult: null,
-        noc: null,
-        idProof: null,
-        otherDocument: null,
-        referredBy: user.name,
-        referredByEmpId: user.empId,
-      });
-      
-      // Reset file inputs
-      const fileInputs = ['photo', 'resume', 'collegeId', 'lastSemesterResult', 'noc', 'idProof', 'otherDocument'];
-      fileInputs.forEach(inputId => {
-        const input = document.getElementById(inputId) as HTMLInputElement;
-        if (input) input.value = '';
-      });
+      const response = await internAPI.createApplication(internData);
+      if (response.success && response.data) {
+        alert(`Intern registered successfully!\nIntern ID: ${response.data.intern.internId}`);
+        setFormData({
+          fullName: '',
+          email: '',
+          phone: '',
+          collegeName: '',
+          course: '',
+          semester: '',
+          rollNumber: '',
+          department: '',
+          startDate: '',
+          endDate: '',
+          address: '',
+          photo: null,
+          resume: null,
+          collegeId: null,
+          lastSemesterResult: null,
+          noc: null,
+          idProof: null,
+          otherDocument: null,
+          referredBy: user.name,
+          referredByEmpId: user.empId,
+        });
+
+        const fileInputs = ['photo', 'resume', 'collegeId', 'lastSemesterResult', 'noc', 'idProof', 'otherDocument'];
+        fileInputs.forEach(inputId => {
+          const input = document.getElementById(inputId) as HTMLInputElement;
+          if (input) input.value = '';
+        });
+      } else {
+        alert(`Error: ${response.error || 'Failed to submit application.'}`);
+      }
     } catch (error) {
-      alert('Error submitting form. Please try again.');
+      console.error('Submission error:', error);
+      alert('An error occurred. Please check the console and backend logs for details.');
     } finally {
       setIsSubmitting(false);
     }
@@ -163,7 +181,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type based on field
       const allowedTypes: Record<string, string[]> = {
         photo: ['image/jpeg', 'image/jpg', 'image/png'],
         resume: ['application/pdf'],
@@ -180,7 +197,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
         return;
       }
 
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert('File size should not exceed 5MB');
         e.target.value = '';
@@ -192,7 +208,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
         [fieldName]: file
       }));
 
-      // Clear error when file is selected
       if (errors[fieldName]) {
         setErrors(prev => ({
           ...prev,
@@ -222,14 +237,11 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Referral Information */}
           <div className="bg-gray-50 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Referral Information</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Referred By
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Referred By</label>
                 <input
                   type="text"
                   value={formData.referredBy}
@@ -238,9 +250,7 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Employee ID
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
                 <input
                   type="text"
                   value={formData.referredByEmpId}
@@ -251,7 +261,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Personal Information */}
           <div className="bg-gray-50 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Intern's Personal Information</h3>
             <div className="grid md:grid-cols-2 gap-4">
@@ -305,7 +314,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
                 />
                 {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
               </div>
-
             </div>
 
             <div className="mt-4">
@@ -325,7 +333,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
               {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
             </div>
 
-            {/* Photo Upload */}
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Upload Photo <span className="text-red-500">*</span>
@@ -355,7 +362,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Academic Information */}
           <div className="bg-gray-50 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Intern's Academic Information</h3>
             <div className="grid md:grid-cols-2 gap-4">
@@ -429,7 +435,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Internship Details */}
           <div className="bg-gray-50 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Internship Details</h3>
             <div className="grid md:grid-cols-2 gap-4">
@@ -487,14 +492,12 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Document Uploads */}
           <div className="bg-gray-50 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">
               <Upload className="inline h-5 w-5 mr-2" />
               Document Uploads
             </h3>
             <div className="grid md:grid-cols-2 gap-4">
-              {/* Resume */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Resume <span className="text-red-500">*</span>
@@ -523,7 +526,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
                 {errors.resume && <p className="text-red-500 text-sm mt-1">{errors.resume}</p>}
               </div>
 
-              {/* College ID */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   College ID <span className="text-red-500">*</span>
@@ -552,7 +554,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
                 {errors.collegeId && <p className="text-red-500 text-sm mt-1">{errors.collegeId}</p>}
               </div>
 
-              {/* Last Semester Result */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Last Semester Result <span className="text-red-500">*</span>
@@ -581,7 +582,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
                 {errors.lastSemesterResult && <p className="text-red-500 text-sm mt-1">{errors.lastSemesterResult}</p>}
               </div>
 
-              {/* ID Proof */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   ID Proof (Aadhar/PAN) <span className="text-red-500">*</span>
@@ -610,7 +610,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
                 {errors.idProof && <p className="text-red-500 text-sm mt-1">{errors.idProof}</p>}
               </div>
 
-              {/* NOC */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   NOC (No Objection Certificate)
@@ -638,7 +637,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
                 </div>
               </div>
 
-              {/* Other Document */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Other Document (if asked by guide)
@@ -668,7 +666,6 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Submit Button */}
           <div className="flex justify-end">
             <button
               type="submit"

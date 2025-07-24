@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { Intern, Application, Assignment, Mentor } from '../models';
 import { authenticate, authorize, authorizeMentorAccess } from '../middleware/auth';
 import { validateBody, validateQuery } from '../middleware/validation';

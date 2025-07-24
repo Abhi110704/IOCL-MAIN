@@ -1,5 +1,5 @@
 // API Configuration and Utilities
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'; // Updated to match backend port
 
 // API Response Types
 export interface ApiResponse<T> {
@@ -129,7 +129,7 @@ const getAuthToken = (): string | null => {
 
 // Set auth token in localStorage
 const setAuthToken = (token: string): void => {
-  localStorage.setItem('authToken');
+  localStorage.setItem('authToken', token); // Fixed: Added token parameter
 };
 
 // Remove auth token from localStorage
@@ -159,14 +159,19 @@ async function apiCall<T>(
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      const errorMessage = errorData.error || `HTTP error! status: ${response.status}`;
+      if (response.status === 401) {
+        removeAuthToken(); // Clear invalid or missing token
+        window.location.href = '/login'; // Redirect to login
+      }
+      throw new Error(errorMessage);
     }
     
     const data = await response.json();
     return data;
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
+  } catch (error: any) {
+    console.error('API Error:', error.message);
+    throw new Error(error.message || 'API request failed');
   }
 }
 
@@ -179,7 +184,7 @@ export const authAPI = {
     });
     
     if (response.success && response.data) {
-      setAuthToken(response.data.token);
+      setAuthToken(response.data.token); // Store token
     }
     
     return response;
@@ -226,7 +231,7 @@ export const internAPI = {
     referredByEmpId: string;
     documents?: Record<string, string>;
   }): Promise<ApiResponse<InternApplication>> => {
-    return await apiCall<InternApplication>('/interns', {
+    return await apiCall<InternApplication>('/applications', { // Changed to /applications
       method: 'POST',
       body: JSON.stringify(applicationData),
     });
@@ -273,7 +278,7 @@ export const internAPI = {
     return await apiCall<{ url: string }>('/upload', {
       method: 'POST',
       body: formData,
-      headers: {}, // Remove Content-Type to let browser set it for FormData
+      headers: {}, // Remove Content-Type for FormData
     });
   },
 };
@@ -531,7 +536,6 @@ export const initializeWebSocket = () => {
       });
 
       socket.on('APPLICATION_STATUS', (data: any) => {
-        // Emit custom event for components to listen
         window.dispatchEvent(new CustomEvent('applicationStatusUpdate', { detail: data }));
       });
 

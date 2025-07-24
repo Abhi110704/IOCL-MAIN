@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Building2, User, Lock, AlertCircle, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { authAPI } from '../utils/api'; // Import authAPI from api.ts
 
 interface LoginProps {
   onLogin: (user: { empId: string; role: 'employee' | 'ld_team' | 'intern'; name: string }) => void;
@@ -16,59 +17,47 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Simple user database for demo
-  const users = [
-    // Regular employees
-    { empId: 'EMP001', password: 'password123', role: 'employee' as const, name: 'Rajesh Kumar' },
-    { empId: 'EMP002', password: 'password123', role: 'employee' as const, name: 'Priya Sharma' },
-    { empId: 'EMP003', password: 'password123', role: 'employee' as const, name: 'Amit Patel' },
-    
-    // L&D Team members
-    { empId: 'IOCLAdmin', password: 'admin123', role: 'ld_team' as const, name: 'Dr. Suresh Gupta' },
-    { empId: 'L&DAdmin', password: 'admin123', role: 'ld_team' as const, name: 'Ms. Kavita Singh' },
-    { empId: 'AdminLD', password: 'admin123', role: 'ld_team' as const, name: 'Mr. Vikram Mehta' },
-    
-    // Interns
-    { empId: 'IOCL-123456', password: 'intern123', role: 'intern' as const, name: 'Rahul Sharma' },
-    { empId: 'IOCL-123457', password: 'intern123', role: 'intern' as const, name: 'Priya Patel' },
-    { empId: 'IOCL-123458', password: 'intern123', role: 'intern' as const, name: 'Amit Singh' },
-    
-    // Mentors
-    { empId: 'MENTOR001', password: 'mentor123', role: 'mentor' as const, name: 'Dr. Rajesh Kumar' },
-    { empId: 'MENTOR002', password: 'mentor123', role: 'mentor' as const, name: 'Ms. Priya Sharma' },
-    { empId: 'MENTOR003', password: 'mentor123', role: 'mentor' as const, name: 'Mr. Amit Patel' },
-  ];
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Map frontend role to backend role
+      const roleMap: { [key: string]: 'ADMIN' | 'EMPLOYEE' | 'INTERN' | 'MENTOR' } = {
+        admin: 'ADMIN',
+        employee: 'EMPLOYEE',
+        intern: 'INTERN',
+        mentor: 'MENTOR',
+      };
 
-    // Filter users based on selected role
-    let filteredUsers = users;
-    if (selectedRole === 'intern') {
-      filteredUsers = users.filter(u => u.role === 'intern');
-    } else if (selectedRole === 'employee') {
-      filteredUsers = users.filter(u => u.role === 'employee');
-    } else if (selectedRole === 'admin') {
-      filteredUsers = users.filter(u => u.role === 'ld_team');
-    } else if (selectedRole === 'mentor') {
-      filteredUsers = users.filter(u => u.role === 'mentor');
-    }
-
-    const user = filteredUsers.find(u => u.empId === credentials.empId && u.password === credentials.password);
-
-    if (user) {
-      onLogin({
-        empId: user.empId,
-        role: user.role as 'employee' | 'ld_team' | 'intern' | 'mentor',
-        name: user.name
+      // Call backend login endpoint
+      const response = await authAPI.login({
+        username: credentials.empId, // Use empId as username per User schema
+        password: credentials.password,
       });
-    } else {
-      setError(`Invalid ${selectedRole === 'admin' ? 'Admin' : selectedRole === 'mentor' ? 'Mentor' : selectedRole === 'intern' ? 'Intern' : 'Employee'} ID or Password`);
+
+      if (response.success && response.data) {
+        const { user } = response.data;
+        // Verify role matches selected role
+        if (user.role !== roleMap[selectedRole]) {
+          throw new Error(`Please select the correct role: ${user.role}`);
+        }
+
+        // Call onLogin with mapped role
+        onLogin({
+          empId: user.empId || user.username, // Use empId or username as fallback
+          role: user.role === 'ADMIN' ? 'ld_team' : user.role.toLowerCase() as 'employee' | 'ld_team' | 'intern',
+          name: user.name,
+        });
+      } else {
+        throw new Error(response.error || 'Login failed');
+      }
+    } catch (err: any) {
+      setError(
+        err.message ||
+        `Invalid ${selectedRole === 'admin' ? 'Admin' : selectedRole === 'mentor' ? 'Mentor' : selectedRole === 'intern' ? 'Intern' : 'Employee'} ID or Password`
+      );
     }
 
     setIsLoading(false);

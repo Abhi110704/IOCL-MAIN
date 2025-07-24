@@ -5,11 +5,11 @@ NODE_ENV=development
 PORT=3001
 
 # Database Configuration
-DATABASE_URL="postgresql://username:password@localhost:5432/iocl_intern_portal"
-
+# DATABASE_URL="postgresql://username:password@localhost:5432/iocl_intern_portal"
+MONGO_URI="mongodb+srv://harsh17215:Har@12345@cluster0.6ggy07q.mongodb.net"
 # JWT Configuration
-JWT_SECRET="your-super-secret-jwt-key-must-be-at-least-32-characters-long-for-security"
-JWT_EXPIRES_IN="7d"
+JWT_SECRET="x7y9z2a4b6c8d0e2f4g6h8i0j2k4l6m8"
+JWT_EXPIRES_IN="1h"
 
 # AWS S3 Configuration (Optional - for file storage)
 AWS_ACCESS_KEY_ID="your-aws-access-key-id"
@@ -32,7 +32,7 @@ MAX_FILE_SIZE="5242880"  # 5MB in bytes
 UPLOAD_DIR="./uploads"
 
 # CORS Configuration
-CORS_ORIGIN="http://localhost:3000"
+CORS_ORIGIN="http://localhost:4173"
 
 # Security Configuration
 BCRYPT_ROUNDS="12"

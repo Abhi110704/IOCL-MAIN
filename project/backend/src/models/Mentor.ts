@@ -66,9 +66,5 @@ const MentorSchema = new Schema<IMentor>({
   timestamps: true,
 });
 
-// Indexes for performance
-MentorSchema.index({ empId: 1 });
-MentorSchema.index({ department: 1 });
-MentorSchema.index({ availability: 1 });
 
 export const Mentor = mongoose.model<IMentor>('Mentor', MentorSchema);

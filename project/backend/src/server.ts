@@ -8,7 +8,7 @@ import { Server as SocketIOServer } from 'socket.io';
 
 import { PORT, NODE_ENV, CORS_ORIGIN } from './config/env';
 import { logger, morganStream } from './config/logger';
-import DatabaseConnection from './config/database';
+import { DatabaseConnection } from './config/database';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { initializeWebSocket } from './services/websocket';
 import { setupRateLimiting } from './middleware/rateLimiting';
@@ -31,7 +31,13 @@ const server = createServer(app);
 // Initialize Socket.IO
 const io = new SocketIOServer(server, {
   cors: {
-    origin: CORS_ORIGIN,
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (!origin || CORS_ORIGIN.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
   },
 });
@@ -53,7 +59,13 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: CORS_ORIGIN,
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin || CORS_ORIGIN.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -86,7 +98,7 @@ app.get('/health', async (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
+app.use('/iocl-intern-portal//api/auth', authRoutes);
 app.use('/api/interns', internRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/mentors', mentorRoutes);
