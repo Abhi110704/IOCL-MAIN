@@ -94,7 +94,9 @@ const options = {
       }
 
       // Simple ping to check connection
-      await mongoose.connection.db.admin().ping();
+      if (mongoose.connection.db) {
+  await mongoose.connection.db.admin().ping();
+}
       return true;
     } catch (error) {
       logger.error('Database health check failed:', error);

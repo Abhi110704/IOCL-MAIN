@@ -131,7 +131,7 @@ export const DEMO_CREDENTIALS = {
     { empId: 'EMP003', password: 'password123', name: 'Amit Patel' },
   ],
   ADMINS: [
-    { empId: 'IOCLAdmin', password: 'admin123', name: 'Dr. Suresh Gupta' },
+    { empId: 'IOCLAdmin', password: 'Adm1n@IOCL2025', name: 'Dr. Suresh Gupta' },
     { empId: 'L&DAdmin', password: 'admin123', name: 'Ms. Kavita Singh' },
     { empId: 'AdminLD', password: 'admin123', name: 'Mr. Vikram Mehta' },
   ],

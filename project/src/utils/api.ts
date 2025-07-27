@@ -1,5 +1,5 @@
 // API Configuration and Utilities
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'; // Updated to match backend port
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'; // Updated to match backend port
 
 // API Response Types
 export interface ApiResponse<T> {
@@ -14,7 +14,7 @@ export interface User {
   empId?: string;
   role: 'ADMIN' | 'EMPLOYEE' | 'INTERN' | 'MENTOR';
   name: string;
-  email?: string;
+  email?: string;  
   department?: string;
   username: string;
   isFirstLogin: boolean;

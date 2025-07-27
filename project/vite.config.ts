@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    port: 5173,
+    port: 4173,
     host: true,
     proxy: {
       '/api': {
@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   preview: {
-    port: 4173,
+    port: 5173,
     host: true,
   },
   optimizeDeps: {

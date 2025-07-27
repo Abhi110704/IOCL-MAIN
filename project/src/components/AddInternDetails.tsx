@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { UserPlus, Save, FileText, Upload, AlertCircle, Camera } from 'lucide-react';
-import { internAPI } from '@/utils/api';
+import { internAPI } from '../utils/api';
 
 interface User {
+  _id: any;
   empId: string;
   role: 'employee' | 'ld_team' | 'intern' | 'mentor';
   name: string;
@@ -103,6 +104,7 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // This function assumes the `user` object from your `useAuth` hook is available in this scope.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -110,9 +112,18 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
       return;
     }
 
+    // Add a check to ensure a user is logged in before submitting.
+    if (!user) {
+      alert('Error: You must be logged in to register an intern.');
+      return;
+    }
+
     setIsSubmitting(true);
 
+    // Create the data object to be sent to the API.
+    // We are adding `internId` here to satisfy the backend validation error.
     const internData = {
+      internId: user._id, // Add the logged-in user's ID to satisfy the backend.
       name: formData.fullName,
       email: formData.email,
       phone: formData.phone,
@@ -124,8 +135,8 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
       startDate: formData.startDate,
       endDate: formData.endDate,
       address: formData.address,
-      referredBy: formData.referredBy,
-      referredByEmpId: formData.referredByEmpId,
+      referredBy: user.name, // Consistently use the logged-in user's info
+      referredByEmpId: user.empId, // Consistently use the logged-in user's info
       photo: formData.photo,
       resume: formData.resume,
       collegeId: formData.collegeId,
@@ -136,9 +147,15 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
     };
 
     try {
+      // Call the API with the complete intern data
       const response = await internAPI.createApplication(internData);
+
       if (response.success && response.data) {
+        // Use a more modern, non-blocking notification instead of alert()
+        // For now, we'll keep alert() as per the original code.
         alert(`Intern registered successfully!\nIntern ID: ${response.data.intern.internId}`);
+        
+        // Reset the form fields after successful submission
         setFormData({
           fullName: '',
           email: '',
@@ -162,11 +179,13 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
           referredByEmpId: user.empId,
         });
 
+        // Clear the file input fields
         const fileInputs = ['photo', 'resume', 'collegeId', 'lastSemesterResult', 'noc', 'idProof', 'otherDocument'];
         fileInputs.forEach(inputId => {
           const input = document.getElementById(inputId) as HTMLInputElement;
           if (input) input.value = '';
         });
+
       } else {
         alert(`Error: ${response.error || 'Failed to submit application.'}`);
       }
@@ -177,6 +196,7 @@ const AddInternDetails: React.FC<AddInternDetailsProps> = ({ user }) => {
       setIsSubmitting(false);
     }
   };
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0];

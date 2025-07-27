@@ -98,7 +98,7 @@ app.get('/health', async (req, res) => {
 });
 
 // API routes
-app.use('/iocl-intern-portal//api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/interns', internRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/mentors', mentorRoutes);

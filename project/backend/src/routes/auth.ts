@@ -28,6 +28,8 @@ router.post('/login',
       ],
     });
 
+    console.log(user);
+
     if (!user) {
       throw new ApiError('Invalid credentials', 401);
     }
