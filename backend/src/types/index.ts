@@ -1,0 +1,35 @@
+@@ .. @@
+ export const CreateInternSchema = z.object({
+   name: z.string().min(2, 'Name must be at least 2 characters'),
+   email: z.string().email('Invalid email format'),
+   phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid phone number'),
+   institute: z.string().min(3, 'Institute name must be at least 3 characters'),
+   course: z.string().min(3, 'Course name must be at least 3 characters'),
+   semester: z.string().min(1, 'Semester is required'),
+   rollNumber: z.string().min(3, 'Roll number must be at least 3 characters'),
+   department: z.string().min(1, 'Department is required'),
+   startDate: z.string().transform((str) => new Date(str)),
+   endDate: z.string().transform((str) => new Date(str)),
+   address: z.string().min(10, 'Address must be at least 10 characters'),
+   referredBy: z.string().min(1, 'Referred by is required'),
+   referredByEmpId: z.string().min(1, 'Referrer employee ID is required'),
+   documents: z.record(z.string()).optional(),
+ });
+
+ export const CreateApplicationSchema = z.object({
+-  internId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid intern ID'),
++  name: z.string().min(2, 'Name must be at least 2 characters'),
++  email: z.string().email('Invalid email format'),
++  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid phone number'),
++  institute: z.string().min(3, 'Institute name must be at least 3 characters'),
++  course: z.string().min(3, 'Course name must be at least 3 characters'),
++  semester: z.string().min(1, 'Semester is required'),
++  rollNumber: z.string().min(3, 'Roll number must be at least 3 characters'),
++  department: z.string().min(1, 'Department is required'),
++  startDate: z.string().transform((str) => new Date(str)),
++  endDate: z.string().transform((str) => new Date(str)),
++  address: z.string().min(10, 'Address must be at least 10 characters'),
++  referredBy: z.string().min(1, 'Referred by is required'),
++  referredByEmpId: z.string().min(1, 'Referrer employee ID is required'),
++  documents: z.record(z.string()).optional(),
+ });
