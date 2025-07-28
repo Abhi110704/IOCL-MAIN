@@ -69,8 +69,8 @@
     "portal",
     "typescript",
     "express",
-    "prisma",
-    "postgresql"
+    "mongoose",
+    "mongodb"
   ],
   "author": "IOCL Development Team",
   "license": "MIT"
